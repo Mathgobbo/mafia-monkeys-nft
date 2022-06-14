@@ -3,6 +3,7 @@
 const main = async ()=>{
   const nftContractFactory = await hre.ethers.getContractFactory('MafiaMonkeysNFT');
   const nftContract = await nftContractFactory.deploy();
+  console.log(await nftContract.name())
   await nftContract.deployed();
   console.log("Contract deployed to:", nftContract.address);
 

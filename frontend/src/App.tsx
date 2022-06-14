@@ -7,16 +7,15 @@ import './styles/App.css';
 const GITHUB_LINK = `https://github.com/Mathgobbo`;
 const OPENSEA_LINK = '';
 const TOTAL_MINT_COUNT = 50;
+const CONTRACT_ADDRESS = "0x3366878bBf531f302A2b5934e18e532FD1b7b005";
+const openSeaCollectionLink = `https://testnets.opensea.io/collection/mafia-monkeys-nft-v3` 
 
 const App = () => {
-  /*
-  * Just a state variable we use to store our user's public wallet. Don't forget to import useState.
-  */
+  const [loading,setLoading] = useState(false)
   const [currentAccount, setCurrentAccount] = useState("");
 
   const askContractToMintNft = async () => {
-    const CONTRACT_ADDRESS = "0x3D58DE77AE06a6c6B14Dd44437ddB6922C8e5790";
-  
+    
     try {
       const { ethereum } = window as any;
   
@@ -29,6 +28,7 @@ const App = () => {
         let nftTxn = await connectedContract.makeAnEpicNFT();
   
         console.log("Mining...please wait.")
+        setLoading(true)
         await nftTxn.wait();
         
         console.log(`Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`);
@@ -38,6 +38,8 @@ const App = () => {
       }
     } catch (error) {
       console.log(error)
+    }finally{
+      setLoading(false)
     }
   }
 
@@ -58,6 +60,7 @@ const App = () => {
        const account = accounts[0];
        console.log("Found an authorized account:", account);
        setCurrentAccount(account);
+       setupEventListener()
      } else {
        console.log("No authorized account found");
      }
@@ -75,8 +78,50 @@ const App = () => {
       const accounts = await ethereum.request({ method: "eth_requestAccounts" });
       console.log("Connected", accounts[0]);
       setCurrentAccount(accounts[0]); 
+      setupEventListener() 
     } catch (error) {
       console.log(error);
+    }
+  }
+
+  // Setup our listener.
+  const setupEventListener = async () => {
+    // Most of this looks the same as our function askContractToMintNft
+    try {
+      const { ethereum } = window as any;
+
+      if (ethereum) {
+        // Same stuff again
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, mafiaMonkeysContract.abi, signer);
+
+        // THIS IS THE MAGIC SAUCE.
+        // This will essentially "capture" our event when our contract throws it.
+        // If you're familiar with webhooks, it's very similar to that!
+
+        let chainId = await ethereum.request({ method: 'eth_chainId' });
+        console.log("Connected to chain " + chainId);
+        
+        // String, hex code of the chainId of the Rinkebey test network
+        const rinkebyChainId = "0x4"; 
+        if (chainId !== rinkebyChainId) {
+          alert("You are not connected to the Rinkeby Test Network!");
+          return;
+        }
+
+        connectedContract.on("NewMafiaMonkeysNFTMinted", (from, tokenId) => {
+          console.log(from, tokenId.toNumber())
+          alert(`Hey there! We've minted your NFT and sent it to your wallet. It may be blank right now. It can take a max of 10 min to show up on OpenSea. Here's the link: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`)
+        });
+
+        console.log("Setup event listener!")
+
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error)
     }
   }
 
@@ -102,12 +147,18 @@ const App = () => {
             </button>
           ) : (
             <button onClick={askContractToMintNft} className="cta-button connect-wallet-button">
-              Mint NFT
+             {loading ? "Loading..." : "Mint NFT"}
             </button>
           )}
         </div>
         <div className="footer-container">
           <a
+            className="footer-text"
+            href={openSeaCollectionLink}
+            target="_blank"
+            rel="noreferrer"
+          >🌊 View Collection on OpenSea</a>
+           <a
             className="footer-text"
             href={GITHUB_LINK}
             target="_blank"

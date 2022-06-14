@@ -14,6 +14,9 @@ contract MafiaMonkeysNFT is ERC721URIStorage, Ownable {
 
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
+  
+  event NewMafiaMonkeysNFTMinted(address sender, uint256 tokenId);
+
 
   constructor() ERC721 ("Mafia Monkeys NFT","MAFIAMONKEYSNFT"){
     console.log("This is My NFT Contact LOL!");
@@ -83,5 +86,7 @@ contract MafiaMonkeysNFT is ERC721URIStorage, Ownable {
     _tokenIds.increment();
     
     console.log("An NFT w/ ID %s has been minted to %s", newItemId, msg.sender);
+
+    emit  NewMafiaMonkeysNFTMinted(msg.sender, newItemId);
   }
 }
