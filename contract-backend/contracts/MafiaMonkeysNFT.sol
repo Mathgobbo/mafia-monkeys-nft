@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: UNLICENSED
-
 pragma solidity ^0.8.1;
 
 // We first import some OpenZeppelin Contracts.
@@ -12,16 +11,12 @@ import { Base64 } from "./libraries/Base64.sol";
 
 contract MafiaMonkeysNFT is ERC721URIStorage, Ownable {
 
+  event NewMafiaMonkeysNFTMinted(address sender, uint256 tokenId);
+  
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
   
-  event NewMafiaMonkeysNFTMinted(address sender, uint256 tokenId);
-
-
-  constructor() ERC721 ("Mafia Monkeys NFT","MAFIAMONKEYSNFT"){
-    console.log("This is My NFT Contact LOL!");
-  }
-
+  uint256 constant _mintPrice = 0.05 ether;
   string[] imagesUrls = [
     "https://gateway.pinata.cloud/ipfs/QmXouzwcjMG1XMRHGqBgibmgNe6jYXxFQc7t1ZqmWYoFWq/Mafia/01.png",
     "https://gateway.pinata.cloud/ipfs/QmXouzwcjMG1XMRHGqBgibmgNe6jYXxFQc7t1ZqmWYoFWq/Mafia/02.png",
@@ -47,6 +42,18 @@ contract MafiaMonkeysNFT is ERC721URIStorage, Ownable {
     "https://gateway.pinata.cloud/ipfs/QmXouzwcjMG1XMRHGqBgibmgNe6jYXxFQc7t1ZqmWYoFWq/Mafia/22.png"
   ];
 
+  constructor() ERC721 ("Mafia Monkeys NFT","MAFIAMONKEYSNFT"){
+    console.log("This is My NFT Contact LOL!");
+  }
+
+  function getMintPrice() public pure returns (uint256) {
+    return _mintPrice;
+  }
+
+  function contractBalance() public view returns (uint256){
+    return address(this).balance;
+  }
+
   function getRandomMonkeyImage(uint256 tokenId) public view returns (string memory){
       uint256 rand = random(string(abi.encodePacked("MAFIA", Strings.toString(tokenId))));
       rand = rand % imagesUrls.length;
@@ -57,10 +64,16 @@ contract MafiaMonkeysNFT is ERC721URIStorage, Ownable {
   function random(string memory input) internal pure returns (uint256) {
       return uint256(keccak256(abi.encodePacked(input)));
   }
+
+  modifier isEnoughEtherToMint() {
+    require(msg.value > _mintPrice, string(abi.encodePacked("You dont have enough money to mint a Mafia Monkey, u poor bitch; you sent ", Strings.toString(msg.value), ", but mint price is ", Strings.toString(_mintPrice))));
+    _;
+  }
   
   // A function our user will hit to get their NFT.
-  function makeAnEpicNFT() public {
+  function makeAnEpicNFT() public isEnoughEtherToMint payable {
      // Get the current tokenId, this starts at 0.
+
     uint256 newItemId = _tokenIds.current();
     string memory nftName = string(abi.encodePacked("Mafia Monkey #", Strings.toString(newItemId)));
     string memory image = getRandomMonkeyImage(newItemId);
@@ -85,7 +98,7 @@ contract MafiaMonkeysNFT is ERC721URIStorage, Ownable {
     // Increment the counter for when the next NFT is minted.
     _tokenIds.increment();
     
-    console.log("An NFT w/ ID %s has been minted to %s", newItemId, msg.sender);
+     console.log("An NFT w/ ID %s has been minted to %s", newItemId, msg.sender);
 
     emit  NewMafiaMonkeysNFTMinted(msg.sender, newItemId);
   }
